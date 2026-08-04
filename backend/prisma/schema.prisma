@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  password       String?
+  displayName    String?
+  avatarUrl      String?
+  provider       String?
+  providerId     String?
+  role           String    @default("user")
+  theme          String    @default("dark")
+  accentColor    String    @default("cyan")
+  language       String    @default("en")
+  timezone       String    @default("UTC")
+  defaultExport  String    @default("json")
+  notifications  Boolean   @default(true)
+  refreshToken   String?
+  lastLogin      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  projects   Project[]
+  targets    Target[]
+  scans      Scan[]
+  notes      Note[]
+  favorites  Favorite[]
+  settings   Setting[]
+
+  @@map("users")
+}
+
+model Setting {
+  id     String @id @default(uuid())
+  userId String
+  key    String
+  value  String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("settings")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targets Target[]
+
+  @@map("projects")
+}
+
+model Target {
+  id          String   @id @default(uuid())
+  domain      String   @unique
+  displayName String?
+  status      String   @default("active")
+  tags        String[] @default([])
+  notes       String?
+  isFavorite  Boolean  @default(false)
+  projectId   String?
+  userId      String
+  lastScanned DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  scans       Scan[]
+  whoisInfos  WhoisInfo[]
+  dnsRecords  DnsRecord[]
+  certs       CertInfo[]
+  techs       TechInfo[]
+  httpInfos   HttpInfo[]
+  subdomains  Subdomain[]
+  notes_rel   Note[]
+
+  @@map("targets")
+}
+
+model Scan {
+  id         String   @id @default(uuid())
+  targetId   String
+  userId     String
+  type       String   @default("full")
+  status     String   @default("queued")
+  progress   Int      @default(0)
+  error      String?
+  result     Json?
+  startedAt  DateTime?
+  completedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([targetId])
+  @@index([userId])
+  @@index([status])
+  @@map("scans")
+}
+
+model WhoisInfo {
+  id            String   @id @default(uuid())
+  targetId      String   @unique
+  registrar     String?
+  creationDate  String?
+  expirationDate String?
+  updatedDate   String?
+  nameServers   String[] @default([])
+  status        String?
+  registrant    Json?
+  admin         Json?
+  tech          Json?
+  raw           String?
+  fetchedAt     DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("whois_infos")
+}
+
+model DnsRecord {
+  id       String   @id @default(uuid())
+  targetId String
+  type     String
+  name     String
+  value    String
+  ttl      Int?
+  priority Int?
+  fetchedAt DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([targetId, type])
+  @@map("dns_records")
+}
+
+model CertInfo {
+  id               String   @id @default(uuid())
+  targetId         String
+  issuer           String?
+  subject          String?
+  serialNumber     String?
+  notBefore        String?
+  notAfter         String?
+  san              String[] @default([])
+  fingerprint      String?
+  publicKeyAlgo    String?
+  signatureAlgo    String?
+  tlsVersion       String?
+  cipher           String?
+  chain            Json?
+  hsts             Boolean  @default(false)
+  ocspStapling     Boolean  @default(false)
+  http2            Boolean  @default(false)
+  http3            Boolean  @default(false)
+  isExpired        Boolean  @default(false)
+  daysUntilExpiry  Int?
+  fetchedAt        DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("cert_infos")
+}
+
+model TechInfo {
+  id        String   @id @default(uuid())
+  targetId  String
+  category  String
+  name      String
+  version   String?
+  icon      String?
+  confidence String  @default("high")
+  fetchedAt DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([targetId, category])
+  @@map("tech_infos")
+}
+
+model HttpInfo {
+  id              String   @id @default(uuid())
+  targetId        String   @unique
+  statusCode      Int?
+  statusText      String?
+  headers         Json?
+  cookies         Json?
+  redirectChain   Json?
+  compression     String?
+  cacheControl    String?
+  contentType     String?
+  server          String?
+  poweredBy       String?
+  responseTime    Int?
+  contentLength   Int?
+  finalUrl        String?
+  fetchedAt       DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("http_infos")
+}
+
+model Subdomain {
+  id        String   @id @default(uuid())
+  targetId  String
+  name      String
+  ipAddress String?
+  source    String   @default("discovered")
+  status    String   @default("new")
+  tags      String[] @default([])
+  isFavorite Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([targetId, name])
+  @@index([targetId])
+  @@map("subdomains")
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String
+  targetId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  target Target? @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  target Target @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId])
+  @@map("favorites")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
