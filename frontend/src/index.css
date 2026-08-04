@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { scrollbar-width: thin; scrollbar-color: #1e1e3a transparent; }
+  *::-webkit-scrollbar { width: 6px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background-color: #1e1e3a; border-radius: 3px; }
+  body { @apply bg-cyber-black text-gray-200 font-sans antialiased; }
+  .light body, .light { @apply bg-gray-50 text-gray-900; }
+}
+
+@layer components {
+  .glass { @apply bg-cyber-card/60 backdrop-blur-xl border border-cyber-border/50 rounded-2xl; }
+  .card-hover { @apply transition-all duration-300 hover:border-cyber-blue/30 hover:shadow-lg hover:shadow-cyber-blue/5; }
+  .glow-text { @apply bg-gradient-to-r from-cyber-blue to-cyber-cyan bg-clip-text text-transparent; }
+  .btn-primary { @apply px-4 py-2 rounded-lg bg-gradient-to-r from-cyber-blue to-cyber-cyan text-black font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-cyber-blue/25 active:scale-95; }
+  .btn-secondary { @apply px-4 py-2 rounded-lg bg-cyber-card border border-cyber-border text-gray-300 font-medium transition-all duration-300 hover:border-cyber-blue/50 hover:bg-cyber-border/50; }
+  .btn-danger { @apply px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 font-medium transition-all duration-300 hover:bg-red-500/20 hover:border-red-500/50; }
+  .input-field { @apply w-full px-4 py-2.5 rounded-lg bg-cyber-dark border border-cyber-border text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyber-blue/50 focus:ring-1 focus:ring-cyber-blue/25 transition-all duration-300; }
+  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  .badge-success { @apply badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20; }
+  .badge-warning { @apply badge bg-amber-500/10 text-amber-400 border border-amber-500/20; }
+  .badge-danger { @apply badge bg-red-500/10 text-red-400 border border-red-500/20; }
+  .badge-info { @apply badge bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/20; }
+  .skeleton { @apply animate-pulse bg-cyber-border/50 rounded; }
+}
+
+.scan-overlay { position: relative; overflow: hidden; }
+.scan-overlay::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent); animation: scanLine 3s linear infinite; }
