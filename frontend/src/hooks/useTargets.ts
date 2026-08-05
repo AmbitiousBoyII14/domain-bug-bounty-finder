@@ -4,15 +4,21 @@ import api from '../api/client';
 import type { Target, DashboardStats } from '../types';
 
 export function useTargets(params?: { page?: number; limit?: number; search?: string; status?: string }) {
-  return useQuery({ queryKey: ['targets', params], queryFn: async () => { const res = await api.get('/targets', { params }); return res.data; } });
+  return useQuery({ queryKey: ['targets', params], queryFn: async () => { const res = await api.get('/targets', { params }); return res.data; }, retry: 1 });
 }
 
 export function useTarget(id: string) {
-  return useQuery({ queryKey: ['target', id], queryFn: async () => { const res = await api.get(`/targets/${id}`); return res.data.data as Target; }, enabled: !!id });
+  return useQuery({ queryKey: ['target', id], queryFn: async () => { const res = await api.get(`/targets/${id}`); return res.data.data as Target; }, enabled: !!id, retry: 1 });
 }
 
 export function useDashboardStats() {
-  return useQuery({ queryKey: ['dashboard'], queryFn: async () => { const res = await api.get('/users/dashboard'); return res.data.data as DashboardStats; }, refetchInterval: 30000 });
+  return useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => { const res = await api.get('/users/dashboard'); return res.data.data as DashboardStats; },
+    refetchInterval: 30000,
+    retry: 1,
+    placeholderData: { targetsScanned: 0, subdomainsFound: 0, technologiesDetected: 0, certificates: 0, dnsRecords: 0, recentScans: [], recentTargets: [], scanStatusBreakdown: {} } as DashboardStats,
+  });
 }
 
 export function useCreateTarget() {
@@ -20,7 +26,7 @@ export function useCreateTarget() {
   return useMutation({
     mutationFn: async (data: { domain: string; projectId?: string; tags?: string[] }) => { const res = await api.post('/targets', data); return res.data.data; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['targets'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); toast.success('Target added'); },
-    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to add target'),
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Failed to add target'),
   });
 }
 
@@ -28,8 +34,8 @@ export function useBulkImport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (data: { domains: string[]; projectId?: string; tags?: string[] }) => { const res = await api.post('/targets/bulk', data); return res.data.data; },
-    onSuccess: (data) => { qc.invalidateQueries({ queryKey: ['targets'] }); toast.success(`${data.filter((d: any) => d.status === 'created').length} targets imported`); },
-    onError: (err: any) => toast.error(err.response?.data?.error || 'Import failed'),
+    onSuccess: (data: any) => { qc.invalidateQueries({ queryKey: ['targets'] }); toast.success(`${data.filter((d: any) => d.status === 'created').length} targets imported`); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Import failed'),
   });
 }
 
